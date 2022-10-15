@@ -21,6 +21,7 @@ import time
 from collections import OrderedDict
 from contextlib import suppress
 from datetime import datetime
+import math
 
 import torch
 import torch.nn as nn
@@ -295,7 +296,7 @@ group.add_argument('--log-interval', type=int, default=50, metavar='N',
                     help='how many batches to wait before logging training status')
 group.add_argument('--recovery-interval', type=int, default=0, metavar='N',
                     help='how many batches to wait before writing recovery checkpoint')
-group.add_argument('--checkpoint-hist', type=int, default=10, metavar='N',
+group.add_argument('--checkpoint-hist', type=int, default=1, metavar='N',
                     help='number of checkpoints to keep (default: 10)')
 group.add_argument('-j', '--workers', type=int, default=4, metavar='N',
                     help='how many training processes to use (default: 4)')
@@ -646,7 +647,9 @@ def main():
                 safe_model_name(args.model),
                 str(data_config['input_size'][-1])
             ])
+            
         output_dir = utils.get_outdir(args.output if args.output else './output/train', exp_name)
+
         decreasing = True if eval_metric == 'loss' else False
         saver = utils.CheckpointSaver(
             model=model, optimizer=optimizer, args=args, model_ema=model_ema, amp_scaler=loss_scaler,
@@ -692,6 +695,13 @@ def main():
                 save_metric = eval_metrics[eval_metric]
                 best_metric, best_epoch = saver.save_checkpoint(epoch, metric=save_metric)
 
+                if epoch == math.floor((10/100)*num_epochs) or epoch == math.floor((30/100)*num_epochs) or epoch == math.floor((50/100)*num_epochs) or epoch == math.floor((70/100)*num_epochs):
+                    print('in epoch condition')
+                    saver.save_irt(epoch,metric=save_metric)
+                    # save proper checkpoint with eval metric
+                
+
+
     except KeyboardInterrupt:
         pass
     if best_metric is not None:
@@ -702,6 +712,8 @@ def train_one_epoch(
         epoch, model, loader, optimizer, loss_fn, args,
         lr_scheduler=None, saver=None, output_dir=None, amp_autocast=suppress,
         loss_scaler=None, model_ema=None, mixup_fn=None):
+
+
 
     if args.mixup_off_epoch and epoch >= args.mixup_off_epoch:
         if args.prefetcher and loader.mixup_enabled:
@@ -807,6 +819,7 @@ def train_one_epoch(
 
 
 def validate(model, loader, loss_fn, args, amp_autocast=suppress, log_suffix=''):
+    
     batch_time_m = utils.AverageMeter()
     losses_m = utils.AverageMeter()
     top1_m = utils.AverageMeter()

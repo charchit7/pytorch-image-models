@@ -11,6 +11,7 @@ import os
 import logging
 
 import torch
+import math
 
 from .model import unwrap_model, get_state_dict
 
@@ -26,6 +27,7 @@ class CheckpointSaver:
             args=None,
             model_ema=None,
             amp_scaler=None,
+            name_model=None,
             checkpoint_prefix='checkpoint',
             recovery_prefix='recovery',
             checkpoint_dir='',
@@ -38,6 +40,7 @@ class CheckpointSaver:
         self.model = model
         self.optimizer = optimizer
         self.args = args
+        self.name_model = self.args.model
         self.model_ema = model_ema
         self.amp_scaler = amp_scaler
 
@@ -60,11 +63,16 @@ class CheckpointSaver:
         self.unwrap_fn = unwrap_fn
         assert self.max_history >= 1
 
+    def save_irt(self, epoch, metric=None):
+        save_pth = os.path.join(self.checkpoint_dir, self.name_model + '_' + str(epoch) + self.extension)
+        self._save(save_pth, epoch, metric)
+
     def save_checkpoint(self, epoch, metric=None):
         assert epoch >= 0
         tmp_save_path = os.path.join(self.checkpoint_dir, 'tmp' + self.extension)
         last_save_path = os.path.join(self.checkpoint_dir, 'last' + self.extension)
         self._save(tmp_save_path, epoch, metric)
+
         if os.path.exists(last_save_path):
             os.unlink(last_save_path)  # required for Windows support.
         os.rename(tmp_save_path, last_save_path)

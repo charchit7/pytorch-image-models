@@ -695,7 +695,7 @@ def main():
                 save_metric = eval_metrics[eval_metric]
                 best_metric, best_epoch = saver.save_checkpoint(epoch, metric=save_metric)
 
-                if epoch == math.floor((10/100)*num_epochs) or epoch == math.floor((30/100)*num_epochs) or epoch == math.floor((50/100)*num_epochs) or epoch == math.floor((70/100)*num_epochs):
+                if epoch == math.floor((10/100)*args.epochs) or epoch == math.floor((30/100)*args.epochs) or epoch == math.floor((50/100)*args.epochs) or epoch == math.floor((70/100)*args.epochs):
                     print('in epoch condition')
                     saver.save_irt(epoch,metric=save_metric)
                     # save proper checkpoint with eval metric
